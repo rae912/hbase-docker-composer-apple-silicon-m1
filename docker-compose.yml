@@ -1,0 +1,97 @@
+version: "3"
+
+services:
+  namenode:
+    image: alecuba16/hdfs-namenode:3.3.1
+    container_name: namenode
+    volumes:
+      - hadoop_namenode:/hadoop/dfs/name
+    environment:
+      - CLUSTER_NAME=test
+    env_file:
+      - ./hadoop.env
+
+  datanode:
+    image: alecuba16/hdfs-datanode:3.3.1
+    container_name: datanode
+    volumes:
+      - hadoop_datanode:/hadoop/dfs/data
+    environment:
+      SERVICE_PRECONDITION: "namenode:50070"
+    env_file:
+      - ./hadoop.env
+
+#  resourcemanager:
+#    image: bde2020/hadoop-resourcemanager:2.0.0-hadoop2.7.4-java8
+#    container_name: resourcemanager
+#    environment:
+#      SERVICE_PRECONDITION: "namenode:50070 datanode:50075"
+#    env_file:
+#      - ./hadoop.env
+#
+#  nodemanager1:
+#    image: bde2020/hadoop-nodemanager:2.0.0-hadoop2.7.4-java8
+#    container_name: nodemanager
+#    environment:
+#      SERVICE_PRECONDITION: "namenode:50070 datanode:50075 resourcemanager:8088"
+#    env_file:
+#      - ./hadoop.env
+#
+#  historyserver:
+#    image: bde2020/hadoop-historyserver:2.0.0-hadoop2.7.4-java8
+#    container_name: historyserver
+#    volumes:
+#      - hadoop_historyserver:/hadoop/yarn/timeline
+#    environment:
+#      SERVICE_PRECONDITION: "namenode:50070 datanode:50075 resourcemanager:8088"
+#    env_file:
+#      - ./hadoop.env
+
+  zoo:
+    image: zookeeper:3.4.10
+    container_name: zoo
+    environment:
+      ZOO_MY_ID: 1
+      ZOO_SERVERS: server.1=0.0.0.0:2888:3888
+    ports:
+      - 2181:2181
+
+  hbase-master:
+    image: alecuba16/hbase-master:2.4.9
+    container_name: hbase-master
+    volumes:
+      - hbase_master_data:/hbase-data
+      - hbase_zookeeper_data:/zookeeper-data
+    ports:
+      - 8080:8080
+      - 8085:8085
+      - 16000:16000
+      - 16010:16010
+    environment:
+      SERVICE_PRECONDITION: "namenode:50070 datanode:50075 zoo:2181"
+      ENABLE_REST_SERVER: "true"
+    env_file:
+      - ./hbase-distributed-local.env
+
+  hbase-region:
+    image: alecuba16/hbase-region:2.4.9
+    container_name: hbase-regionserver
+    hostname: hbase-regionserver
+    volumes:
+      - hbase_region_data:/hbase-data
+      - hbase_zookeeper_data:/zookeeper-data
+    env_file:
+      - ./hbase-distributed-local.env
+    environment:
+      HBASE_CONF_hbase_regionserver_hostname: hbase-region
+      SERVICE_PRECONDITION: "namenode:50070 datanode:50075 zoo:2181 hbase-master:16010"
+    ports:
+      - 16030:16030
+
+volumes:
+  hadoop_namenode:
+  hadoop_datanode:
+  hadoop_historyserver:
+  hbase_master_data:
+  hbase_region_data:
+  hbase_zookeeper_data:
