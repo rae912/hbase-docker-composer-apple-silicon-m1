@@ -10,6 +10,8 @@ services:
       - CLUSTER_NAME=test
     env_file:
       - ./hadoop.env
+    networks:
+      - hbase
 
   datanode:
     image: alecuba16/hdfs-datanode:3.3.1
@@ -20,6 +22,8 @@ services:
       SERVICE_PRECONDITION: "namenode:50070"
     env_file:
       - ./hadoop.env
+    networks:
+      - hbase
 
 #  resourcemanager:
 #    image: bde2020/hadoop-resourcemanager:2.0.0-hadoop2.7.4-java8
@@ -55,6 +59,8 @@ services:
       ZOO_SERVERS: server.1=0.0.0.0:2888:3888
     ports:
       - 2181:2181
+    networks:
+      - hbase
 
   hbase-master:
     image: alecuba16/hbase-master:2.4.9
@@ -72,6 +78,8 @@ services:
       ENABLE_REST_SERVER: "true"
     env_file:
       - ./hbase-distributed-local.env
+    networks:
+      - hbase
 
   hbase-region:
     image: alecuba16/hbase-region:2.4.9
@@ -87,6 +95,9 @@ services:
       SERVICE_PRECONDITION: "namenode:50070 datanode:50075 zoo:2181 hbase-master:16010"
     ports:
       - 16030:16030
+      - 16020:16020
+    networks:
+      - hbase
 
 volumes:
   hadoop_namenode:
@@ -95,3 +106,7 @@ volumes:
   hbase_master_data:
   hbase_region_data:
   hbase_zookeeper_data:
+
+networks:
+  hbase:
+    driver: bridge
